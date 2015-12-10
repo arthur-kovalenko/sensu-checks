@@ -2,20 +2,21 @@
 #
 # Collect metrics on your JVM and allow you to trace usage in graphite
 
-# Modified: Mario Harvey - badmadrad.com
-
 # You must have openjdk-7-jdk and openjdk-7-jre packages installed
 # http://openjdk.java.net/install/
 
-# Also make sure the user "sensu" can sudo without password
+# Also make sure the user "sensu" can sudo without password:
+# cd /etc/sudoers
+# sensu ALL=(ALL) NOPASSWD:ALL
 
 # #RED
-while getopts 's:n:u:h' OPT; do
+while getopts 's:n:u:h:d' OPT; do
 case $OPT in
 s) SCHEME=$OPTARG;;
 n) NAME=$OPTARG;;
 u) UNAME=$OPTARG;;
 h) hlp="yes";;
+d) dbg="yes";;
 esac
 done
 #usage
@@ -24,6 +25,7 @@ HELP="
                 -n --> NAME or name of jvm process < value
 		-s --> SCHEME or server name ex. :::name:::, by default it uses the process name < value
                 -u --> User name, if the Java app is run by a different user, default is empty < value
+                -d --> Debug mode, to test if the specified process is found
 		-h --> print this help screen
 "
 if [ "$hlp" = "yes" ]; then
@@ -49,7 +51,12 @@ fi
 #Get PID of JVM.
 #At this point grep for the name of the java process running your jvm.
 PID=$(sudo $UNAMEVAR jps | grep $NAME | awk '{ print $1}')
-echo "Found ${NAME} PID, which is ${PID}"
+
+# Debug mode
+if [ "$dbg" = "yes" ]; then
+        echo "Test mode:"
+        echo "Found ${NAME} PID, which is ${PID}"
+fi
 
 #Get heap capacity of JVM
 TotalHeap=$(sudo $UNAMEVAR jstat -gccapacity $PID  | tail -n 1 | awk '{ print ($4 + $5 + $6 + $10) / 1024 }')
